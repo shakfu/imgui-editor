@@ -3,10 +3,14 @@
 // If you are new to Dear ImGui, read documentation from the docs/ folder + read the top of imgui.cpp.
 // Read online: https://github.com/ocornut/imgui/tree/master/docs
 
+#include <fstream>
+#include <streambuf>
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_metal.h"
 #include "TextEditor.h"
+
 #include <stdio.h>
 
 #define GLFW_INCLUDE_NONE
@@ -58,7 +62,7 @@ int main(int, char**)
 
     // Create window with graphics context
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+Metal example", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "imgui-texteditor", NULL, NULL);
     if (window == NULL)
         return 1;
 
@@ -79,8 +83,8 @@ int main(int, char**)
     MTLRenderPassDescriptor *renderPassDescriptor = [MTLRenderPassDescriptor new];
 
     // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
+    // bool show_demo_window = true;
+    // bool show_another_window = false;
     float clear_color[4] = {0.45f, 0.55f, 0.60f, 1.00f};
 
     // Main loop
@@ -118,42 +122,178 @@ int main(int, char**)
             auto lang = TextEditor::LanguageDefinition::Python();
 
             // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-            if (show_demo_window)
-                ImGui::ShowDemoWindow(&show_demo_window);
+            // if (show_demo_window)
+            //     ImGui::ShowDemoWindow(&show_demo_window);
 
             // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
             {
-                static float f = 0.0f;
-                static int counter = 0;
+                // static float f = 0.0f;
+                // static int counter = 0;
 
-                ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+                ImGui::Begin("demo.py");   // Create a window called "Hello, world!" and append into it.
 
-                ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-                ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-                ImGui::Checkbox("Another Window", &show_another_window);
+                // ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+                // ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+                // ImGui::Checkbox("Another Window", &show_another_window);
 
-                ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+                // ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+                // ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
-                if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                    counter++;
-                ImGui::SameLine();
-                ImGui::Text("counter = %d", counter);
+                // if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+                //     counter++;
+                // ImGui::SameLine();
+                // ImGui::Text("counter = %d", counter);
 
-                ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+                // ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+                
+                editor.SetLanguageDefinition(lang);
+                //editor.SetPalette(TextEditor::GetLightPalette());
+
+                // error markers
+                TextEditor::ErrorMarkers markers;
+                markers.insert(std::make_pair<int, std::string>(6, "Example error here:\nInclude file not found: \"TextEditor.h\""));
+                markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
+                editor.SetErrorMarkers(markers);
+
+                // "breakpoint" markers
+                //TextEditor::Breakpoints bpts;
+                //bpts.insert(24);
+                //bpts.insert(47);
+                //editor.SetBreakpoints(bpts);
+
+                static const char* fileToEdit = "demo.py";
+            //  static const char* fileToEdit = "test.cpp";
+
+                {
+                    std::ifstream t(fileToEdit);
+                    if (t.good())
+                    {
+                        std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+                        editor.SetText(str);
+                    }
+                }
+
+                // ImGui::NewFrame();
+
+                // ImGui::ShowTestWindow();
+
+                auto cpos = editor.GetCursorPosition();
+
+
+                ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
+                    editor.IsOverwrite() ? "Ovr" : "Ins",
+                    editor.CanUndo() ? "*" : " ",
+                    editor.GetLanguageDefinitionName(), fileToEdit);
+
+
+                // // Main loop
+                // MSG msg;
+                // ZeroMemory(&msg, sizeof(msg));
+                // while (msg.message != WM_QUIT)
+                // {
+                //     if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
+                //     {
+                //         TranslateMessage(&msg);
+                //         DispatchMessage(&msg);
+                //         continue;
+                //     }
+                //     ImGui_ImplDX11_NewFrame();
+                //     ImGui_ImplWin32_NewFrame();
+                //     ImGui::NewFrame();
+
+                //     ImGui::ShowTestWindow();
+
+                //     auto cpos = editor.GetCursorPosition();
+                //     ImGui::Begin("Text Editor Demo", nullptr, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar);
+                //     ImGui::SetWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+                //     if (ImGui::BeginMenuBar())
+                //     {
+                //         if (ImGui::BeginMenu("File"))
+                //         {
+                //             if (ImGui::MenuItem("Save"))
+                //             {
+                //                 auto textToSave = editor.GetText();
+                //                 /// save text....
+                //             }
+                //             if (ImGui::MenuItem("Quit", "Alt-F4"))
+                //                 break;
+                //             ImGui::EndMenu();
+                //         }
+                //         if (ImGui::BeginMenu("Edit"))
+                //         {
+                //             bool ro = editor.IsReadOnly();
+                //             if (ImGui::MenuItem("Read-only mode", nullptr, &ro))
+                //                 editor.SetReadOnly(ro);
+                //             ImGui::Separator();
+
+                //             if (ImGui::MenuItem("Undo", "ALT-Backspace", nullptr, !ro && editor.CanUndo()))
+                //                 editor.Undo();
+                //             if (ImGui::MenuItem("Redo", "Ctrl-Y", nullptr, !ro && editor.CanRedo()))
+                //                 editor.Redo();
+
+                //             ImGui::Separator();
+
+                //             if (ImGui::MenuItem("Copy", "Ctrl-C", nullptr, editor.HasSelection()))
+                //                 editor.Copy();
+                //             if (ImGui::MenuItem("Cut", "Ctrl-X", nullptr, !ro && editor.HasSelection()))
+                //                 editor.Cut();
+                //             if (ImGui::MenuItem("Delete", "Del", nullptr, !ro && editor.HasSelection()))
+                //                 editor.Delete();
+                //             if (ImGui::MenuItem("Paste", "Ctrl-V", nullptr, !ro && ImGui::GetClipboardText() != nullptr))
+                //                 editor.Paste();
+
+                //             ImGui::Separator();
+
+                //             if (ImGui::MenuItem("Select all", nullptr, nullptr))
+                //                 editor.SetSelection(TextEditor::Coordinates(), TextEditor::Coordinates(editor.GetTotalLines(), 0));
+
+                //             ImGui::EndMenu();
+                //         }
+
+                //         if (ImGui::BeginMenu("View"))
+                //         {
+                //             if (ImGui::MenuItem("Dark palette"))
+                //                 editor.SetPalette(TextEditor::GetDarkPalette());
+                //             if (ImGui::MenuItem("Light palette"))
+                //                 editor.SetPalette(TextEditor::GetLightPalette());
+                //             if (ImGui::MenuItem("Retro blue palette"))
+                //                 editor.SetPalette(TextEditor::GetRetroBluePalette());
+                //             ImGui::EndMenu();
+                //         }
+                //         ImGui::EndMenuBar();
+                //     }
+
+                //     ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
+                //         editor.IsOverwrite() ? "Ovr" : "Ins",
+                //         editor.CanUndo() ? "*" : " ",
+                //         editor.GetLanguageDefinition().mName.c_str(), fileToEdit);
+
+                //     editor.Render("TextEditor");
+                //     ImGui::End();
+
+                //     // Rendering
+                //     g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_col);
+                //     ImGui::Render();
+                //     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+                //     g_pSwapChain->Present(1, 0); // Present with vsync
+                //     //g_pSwapChain->Present(0, 0); // Present without vsync
+                // }
+
+
+
                 editor.Render("TextEditor");
                 ImGui::End();
             }
 
             // 3. Show another simple window.
-            if (show_another_window)
-            {
-                ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-                ImGui::Text("Hello from another window!");
-                if (ImGui::Button("Close Me"))
-                    show_another_window = false;
-                ImGui::End();
-            }
+            // if (show_another_window)
+            // {
+            //     ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            //     ImGui::Text("Hello from another window!");
+            //     if (ImGui::Button("Close Me"))
+            //         show_another_window = false;
+            //     ImGui::End();
+            // }
 
             // Rendering
             ImGui::Render();
